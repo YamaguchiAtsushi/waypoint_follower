@@ -57,6 +57,49 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_)
 
 }
 
+bool readWaypointsFromCSV(std::string csv_file){
+    std::ifstream file(csv_file); //csvファイルを開く
+    if(!file){ //ファイルが開けなかった場合
+        ROS_ERROR("Cannot open file: %s", csv_file.c_str());
+        return false;
+    }
+
+    std::string line; //1行ずつ読み込むための変数
+
+    std::getline(file, line); //最初の一行を読み飛ばす
+
+    while (std::getline(file, line)) {
+            std::istringstream ss(line);//文字列をカンマで区切るための変数
+            std::string token;//1つのデータを格納する変数
+            geometry_msgs::PoseStamped waypoint; //waypointを格納する変数
+
+            // x座標の読み込み
+            std::getline(ss, token, ',');//カンマで区切った文字列を1つずつ読み込む
+            waypoint.pose.position.x = std::stod(token);//文字列をdouble型に変換してwaypointに格納
+
+            // y座標の読み込み
+            std::getline(ss, token, ',');
+            waypoint.pose.position.y = std::stod(token);
+
+            // z座標の読み込み
+            std::getline(ss, token, ',');
+            waypoint.pose.position.z = std::stod(token);
+
+            // orientationを初期化
+            waypoint.pose.orientation.x = 1.0;
+
+            // ベクトルに追加
+            waypoints.push_back(waypoint);
+            
+            // デバッグメッセージを追加
+            ROS_INFO("Read waypoint: x=%f, y=%f, z=%f", waypoint.pose.position.x, waypoint.pose.position.y, waypoint.pose.position.z);
+        }
+
+        file.close();
+        return true;
+    }
+
+
 
 // クォータニオンをオイラーに変換                                               
 void geometry_quat_to_rpy(double &roll, double &pitch, double &yaw, geometry_msgs::Quaternion geometry_quat)
@@ -65,6 +108,13 @@ void geometry_quat_to_rpy(double &roll, double &pitch, double &yaw, geometry_msg
     quaternionMsgToTF(geometry_quat, quat);
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 }
+
+// void rpy_to_geometry_quat(double roll, double pitch, double yaw, geometry_msgs::Quaternion &geometry_quat)
+// {
+//     tf::Quaternion quat_;
+//     quat_.setRPY(roll, pitch, yaw);
+//     quaternionTFToMsg(quat_, geometry_quat);
+// }
 
 //　goalで指定した位置に近いかの判定を行う
 int near_position(geometry_msgs::PoseStamped goal)
@@ -150,11 +200,6 @@ int main(int argc, char **argv)
 
 	ros::Rate loop_rate(100);
 
-	ros::Time start;
-	ros::Time now;
-
-
-
 	// odometryの値の初期化
 	robot_x = 0.0;
 	robot_y = 0.0;
@@ -162,53 +207,32 @@ int main(int argc, char **argv)
 	robot_r.y = 0.0;
 	robot_r.z = 0.0;
 	robot_r.w = 1.0;
+    
+    std::string csv_file = "/home/yamaguchi-a/catkin_ws/src/waypoint_follower/csv/waypoints.csv";
 
+    if (!readWaypointsFromCSV(csv_file)) {
+        ROS_ERROR("Failed to read waypoints from CSV file.");
+        return 1;
+    }
 
-	while (ros::ok())
-	{
-		ros::spinOnce();
-		ros::Time start = ros::Time::now();
+    int i = 0;
 
+    while(ros::ok()){
+        ros::spinOnce();
 
-		if (flag == 0){
-			goal.pose.position.x = 4.5;
-    		goal.pose.position.y = 0.0;
+        goal.pose.position.x = waypoints[i].pose.position.x;
+        goal.pose.position.y = waypoints[i].pose.position.y;
+        std::cout << goal.pose.position.x << " " << goal.pose.position.y << std::endl;
 
-		}
-
-		if (flag == 1){
-			goal.pose.position.x = 0.0;
-    		goal.pose.position.y = 0.0;
-		}
-		if (flag == 2){
-			goal.pose.position.x = 4.5;
-    		goal.pose.position.y = 0.0;			
-		}
-
-		if (flag == 3){
-			goal.pose.position.x = 0.0;
-    		goal.pose.position.y = 0.0;			
-		}
-		if (flag == 4){
-			goal.pose.position.x = 4.5;
-    		goal.pose.position.y = 1.0;			
-		}
-
-
-		// 比例制御で近づき、近づき終えたら停止
-		go_position(goal);
-        if (near_position(goal))
-        {
-			twist.linear.x = 0.0;
-			twist.angular.z = 0.0;
-			flag += 1;
+        go_position(goal);
+        if(near_position(goal)){
+            twist.linear.x = 0.0;
+            twist.angular.z = 0.0;
+            i += 1;
         }
 
-
-		twist_pub.publish(twist);
-
-		loop_rate.sleep();
-	}
-
+        twist_pub.publish(twist);
+        loop_rate.sleep();
+    }
 	return 0;
 }
