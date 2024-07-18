@@ -9,21 +9,24 @@
 
 #include <map>
 #include <math.h>
-
+#include <vector>
 #include "std_msgs/Empty.h"
 #include <time.h>
+#include <fstream>
+#include <sstream>
+#include <string>
+
 
 // オドメトリから得られる現在の位置と姿勢
 double robot_x, robot_y;
 double roll, pitch, yaw;
+
 geometry_msgs::Quaternion robot_r;
-
 geometry_msgs::Twist twist; // 指令する速度、角速度
-
 std::map<std::string, double> params_; // パラメータをここに格納
 geometry_msgs::PoseStamped goal; // 目標地点
-
 sensor_msgs::LaserScan scan;
+std::vector<geometry_msgs::PoseStamped> waypoints; // waypointを格納するvector
 
 int flag = 0;
 int scan_flag = 0;
@@ -51,7 +54,6 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_)
     scan.range_max = scan_->range_max;
     scan.ranges = scan_->ranges;
     scan.intensities = scan_->intensities;
-    // ROS_INFO("7");
 
 }
 
@@ -74,8 +76,9 @@ int near_position(geometry_msgs::PoseStamped goal)
 
 
 void go_position(geometry_msgs::PoseStamped goal)
-{
-    double k_v = 0.3; // 速度の係数
+
+    //double k_v = 0.3; // 速度の係数の初期値
+    double k_v = 3.0; // 速度の係数
     double k_w = 1.6; // 角速度の係数
 	
 	// 指令する速度と角速度
