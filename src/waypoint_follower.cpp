@@ -76,7 +76,7 @@ int near_position(geometry_msgs::PoseStamped goal)
 
 
 void go_position(geometry_msgs::PoseStamped goal)
-
+{
     //double k_v = 0.3; // 速度の係数の初期値
     double k_v = 3.0; // 速度の係数
     double k_w = 1.6; // 角速度の係数
