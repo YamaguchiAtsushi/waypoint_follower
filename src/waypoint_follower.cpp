@@ -122,6 +122,7 @@ int near_position(geometry_msgs::PoseStamped goal)
 	double difx = robot_x - goal.pose.position.x;
 	double dify = robot_y - goal.pose.position.y;
 	return (sqrt(difx * difx + dify * dify) < 0.2);
+	//return (sqrt(difx * difx + dify * dify) < 0.05);
 }
 
 
@@ -175,7 +176,8 @@ void go_position(geometry_msgs::PoseStamped goal)
 		v = -k_v * ((goal.pose.position.x - robot_x) * (goal.pose.position.x - robot_x) + (goal.pose.position.y - robot_y) * (goal.pose.position.y - robot_y));
 	
 	// publishする値の格納
-	twist.linear.x = v;
+	twist.linear.x = 1.0;//waypointの上で止まらないようにする
+	//twist.linear.x = v;//waypointの上で止まる
 	twist.linear.y = 0.0;
 	twist.linear.z = 0.0;
 	twist.angular.x = 0.0;
