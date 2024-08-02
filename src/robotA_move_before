@@ -5,6 +5,7 @@
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <sensor_msgs/LaserScan.h>
+#include <std_msgs/Int16.h>
 
 
 #include <map>
@@ -27,11 +28,23 @@ std::map<std::string, double> params_; // パラメータをここに格納
 geometry_msgs::PoseStamped goal; // 目標地点
 sensor_msgs::LaserScan scan;
 std::vector<geometry_msgs::PoseStamped> waypoints; // waypointを格納するvector
+std_msgs::Int16 waypoints_A_number_now; // 今向かっているロボットAのwaypointの番号;
+//std_msgs::Int16 waypoints_A_number_next; // 送られてくる次に向かうロボットAのwaypointの番号
 
-int flag = 0;
-int scan_flag = 0;
-int object_flag = 0;
+//int waypoints_A_number_now = 0; //今向かっているロボットAのwaypointの番号
+//int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
+int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
+bool goal_flag = false;
 
+void numberCallback(const std_msgs::Int16::ConstPtr &msg)
+{
+    // int before = waypoints_A_number_next;
+    waypoints_A_number_next = msg->data;
+    // if (before != waypoints_A_number_next){
+    //     goal_flag = true;
+    // }
+
+}
 
 // オドメトリのコールバック
 void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -122,17 +135,13 @@ int near_position(geometry_msgs::PoseStamped goal)
 	double difx = robot_x - goal.pose.position.x;
 	double dify = robot_y - goal.pose.position.y;
 	return (sqrt(difx * difx + dify * dify) < 0.2);
-	//return (sqrt(difx * difx + dify * dify) < 0.05);
 }
-
 
 void go_position(geometry_msgs::PoseStamped goal)
 {
     //double k_v = 0.3; // 速度の係数の初期値
     double k_v = 3.0; // 速度の係数
-    double k_w = 1.6; // 角速度の係数の初期値
-    // double k_w = 3.6; // 角速度の係数
-
+    double k_w = 1.6; // 角速度の係数
 	
 	// 指令する速度と角速度
 	double v = 0.0;
@@ -178,8 +187,7 @@ void go_position(geometry_msgs::PoseStamped goal)
 		v = -k_v * ((goal.pose.position.x - robot_x) * (goal.pose.position.x - robot_x) + (goal.pose.position.y - robot_y) * (goal.pose.position.y - robot_y));
 	
 	// publishする値の格納
-	twist.linear.x = 1.0;//waypointの上で止まらないようにする
-	//twist.linear.x = v;//waypointの上で止まる
+	twist.linear.x = v;
 	twist.linear.y = 0.0;
 	twist.linear.z = 0.0;
 	twist.angular.x = 0.0;
@@ -189,10 +197,11 @@ void go_position(geometry_msgs::PoseStamped goal)
 	// std::cout << "v: " << v << ", w: " << w << std::endl;
 
 }
+
 int main(int argc, char **argv)
 {
 	// 初期化関連
-	ros::init(argc, argv, "waypoint_follower");
+	ros::init(argc, argv, "robotA_move");
 	ros::NodeHandle nh;
 	ros::NodeHandle pnh("~");
 
@@ -200,9 +209,12 @@ int main(int argc, char **argv)
 	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
     ros::Subscriber scan_sub = nh.subscribe("scan", 10, scanCallback);
-
+    ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
+    ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
 
 	ros::Rate loop_rate(100);
+
+    ros::Time start = ros::Time::now();
 
 	// odometryの値の初期化
 	robot_x = 0.0;
@@ -212,30 +224,82 @@ int main(int argc, char **argv)
 	robot_r.z = 0.0;
 	robot_r.w = 1.0;
     
-    std::string csv_file = "/home/yamaguchi-a/catkin_ws/src/waypoint_follower/csv/waypoints.csv";
+    std::string csv_file = "/home/yamaguchi-a/catkin_ws/src/waypoint_follower/csv/waypoints_A.csv";
+
+    
 
     if (!readWaypointsFromCSV(csv_file)) {
         ROS_ERROR("Failed to read waypoints from CSV file.");
         return 1;
     }
+    
 
-    int i = 0;
 
     while(ros::ok()){
-        ros::spinOnce();
 
-        goal.pose.position.x = waypoints[i].pose.position.x;
-        goal.pose.position.y = waypoints[i].pose.position.y;
-        std::cout << robot_x << " " << robot_y << std::endl;
-
-        go_position(goal);
-        if(near_position(goal)){
-            twist.linear.x = 0.0;
-            twist.angular.z = 0.0;
-            i += 1;
+        ros::Time now = ros::Time::now();   
+        if (now - start < ros::Duration(3.0))
+        {
+            continue;
         }
 
+        ros::spinOnce();
+
+        waypoints_A_number_now.data = waypoints_A_number_next;
+        goal.pose.position.x = waypoints[waypoints_A_number_next].pose.position.x;
+        goal.pose.position.y = waypoints[waypoints_A_number_next].pose.position.y;
+
+        std::cout << "waypoints_A_number_now.data:" << waypoints_A_number_now.data << std::endl;
+        std::cout << "waypoints_A_number_next" << waypoints_A_number_next << std::endl;
+        std::cout << goal.pose.position.x << " " << goal.pose.position.y << std::endl;
+
+        go_position(goal);
+        //std::cout << "check:0" << std::endl;
+        std::cout << "goal_flag:" << goal_flag << std::endl;
+
+
+        if(near_position(goal)){
+            //std::cout << "check:1" << std::endl;
+            std::cout << "goal_flag:" << goal_flag << std::endl;
+            twist.linear.x = 0.0;
+            twist.angular.z = 0.0;
+
+            waypoints_A_number_pub.publish(waypoints_A_number_now);
+
+            //waypoints_A_number_pub.publish(waypoints_A_number_now);
+            //if (goal_flag == false && waypoints_A_number_next == waypoints_A_number_now.data){
+                //std::cout << "check:2" << std::endl;
+
+                //waypoints_A_number_now.data += 1;
+              //  std::cout << "nownownow:" << waypoints_A_number_now.data << std::endl;
+                //waypoints_A_number_pub.publish(waypoints_A_number_now);
+                //goal_flag = true;
+            }
+
+        // int before = waypoints_A_number_next;
+        // if (before != waypoints_A_number_next){
+        //     goal_flag = true;
+        // }
+        // if (goal_flag == true){
+        //     waypoints_A_number_now.data += 1;
+        //     waypoints_A_number_pub.publish(waypoints_A_number_now);
+        //     //to_be_waypoints_number +=1;
+        //     goal_flag = false;
+        // }
+            // if (waypoints_A_number_next == 0){
+            //     continue;
+            // }else{
+            //     waypoints_A_number_now.data += 1;
+            //     std::cout << "nownownow:" << waypoints_A_number_now.data << std::endl;
+            //     break;
+
+            // }
+        
+
+
+
         twist_pub.publish(twist);
+        //waypoints_A_number_pub.publish(waypoints_A_number_now);
         loop_rate.sleep();
     }
 	return 0;

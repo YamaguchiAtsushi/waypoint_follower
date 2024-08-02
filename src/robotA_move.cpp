@@ -32,12 +32,15 @@ std_msgs::Int16 waypoints_A_number_now; // 今向かっているロボットAの
 //std_msgs::Int16 waypoints_A_number_next; // 送られてくる次に向かうロボットAのwaypointの番号
 
 //int waypoints_A_number_now = 0; //今向かっているロボットAのwaypointの番号
-int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
-
+//int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
+int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
+bool goal_flag = false;
 
 void numberCallback(const std_msgs::Int16::ConstPtr &msg)
 {
     waypoints_A_number_next = msg->data;
+
+
 }
 
 // オドメトリのコールバック
@@ -131,7 +134,6 @@ int near_position(geometry_msgs::PoseStamped goal)
 	return (sqrt(difx * difx + dify * dify) < 0.2);
 }
 
-
 void go_position(geometry_msgs::PoseStamped goal)
 {
     //double k_v = 0.3; // 速度の係数の初期値
@@ -192,6 +194,7 @@ void go_position(geometry_msgs::PoseStamped goal)
 	// std::cout << "v: " << v << ", w: " << w << std::endl;
 
 }
+
 int main(int argc, char **argv)
 {
 	// 初期化関連
@@ -203,10 +206,12 @@ int main(int argc, char **argv)
 	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
     ros::Subscriber scan_sub = nh.subscribe("scan", 10, scanCallback);
-    ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number", 10);
-    ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number", 10, numberCallback);
+    ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
+    ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
 
 	ros::Rate loop_rate(100);
+
+    ros::Time start = ros::Time::now();
 
 	// odometryの値の初期化
 	robot_x = 0.0;
@@ -217,39 +222,55 @@ int main(int argc, char **argv)
 	robot_r.w = 1.0;
     
     std::string csv_file = "/home/yamaguchi-a/catkin_ws/src/waypoint_follower/csv/waypoints_A.csv";
+
     
 
     if (!readWaypointsFromCSV(csv_file)) {
         ROS_ERROR("Failed to read waypoints from CSV file.");
         return 1;
     }
+    
 
 
     while(ros::ok()){
-        ros::spinOnce();
-        waypoints_A_number_now.data = waypoints_A_number_next;
-        goal.pose.position.x = waypoints[waypoints_A_number_now.data].pose.position.x;
-        goal.pose.position.y = waypoints[waypoints_A_number_now.data].pose.position.y;
 
-        std::cout << waypoints_A_number_now << std::endl;
+        ros::Time now = ros::Time::now();   
+        if (now - start < ros::Duration(3.0))
+        {
+            continue;
+        }
+
+        ros::spinOnce();
+
+        waypoints_A_number_now.data = waypoints_A_number_next;
+        goal.pose.position.x = waypoints[waypoints_A_number_next].pose.position.x;
+        goal.pose.position.y = waypoints[waypoints_A_number_next].pose.position.y;
+
+        std::cout << "waypoints_A_number_now.data:" << waypoints_A_number_now.data << std::endl;
+        std::cout << "waypoints_A_number_next" << waypoints_A_number_next << std::endl;
         std::cout << goal.pose.position.x << " " << goal.pose.position.y << std::endl;
 
         go_position(goal);
+        std::cout << "goal_flag:" << goal_flag << std::endl;
+
+
         if(near_position(goal)){
+
+            std::cout << "goal_flag:" << goal_flag << std::endl;
             twist.linear.x = 0.0;
             twist.angular.z = 0.0;
-            //waypoints_A_number_pub.publish(waypoints_A_number_now);
-            if (waypoints_A_number_next == 0){
-                continue;
-            }else{
-                waypoints_A_number_now.data += 1;
+
+            waypoints_A_number_pub.publish(waypoints_A_number_now);
+
             }
-        }
+
+
+        
 
 
 
         twist_pub.publish(twist);
-        waypoints_A_number_pub.publish(waypoints_A_number_now);
+        //waypoints_A_number_pub.publish(waypoints_A_number_now);
         loop_rate.sleep();
     }
 	return 0;
