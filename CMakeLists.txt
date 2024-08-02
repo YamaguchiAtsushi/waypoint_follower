@@ -114,6 +114,13 @@ target_link_libraries(waypoint_follower
   ${catkin_LIBRARIES}
 )
 
+add_executable(robotA_move src/robotA_move.cpp)
+
+target_link_libraries(robotA_move
+  ${catkin_LIBRARIES}
+)
+
+
 ###########
 ## Build ##
 ###########
