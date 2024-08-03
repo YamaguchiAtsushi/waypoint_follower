@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+    <group ns="robotA">
+    <arg name="ojama" default="true"/>
+    <arg name="beego" default="true"/>
+    <arg name="rviz" default="true"/>
+
+        <node pkg="ypspur_ros" type="ypspur_ros" name="ypspur_ros" respawn="true">
+        <param name="param_file"
+            value="/home/yamaguchi-a/researches/programs/platform/yp-robot-params/robot-params/beego.param" />
+        <param name="port" value="/dev/serial/by-id/usb-T-frog_project_T-frog_Driver-if00" />
+        <param name="cmd_vel_expire" value="5.0" />
+        </node>
+
+    <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+        <!-- Starts up faster, but timestamps will be inaccurate. --> 
+        <param name="calibrate_time" type="bool" value="false"/> 
+        <!-- Set the port to connect to here -->
+        <param name="serial_port" type="string" value="/dev/serial/by-id/usb-T-frog_project_T-frog_Driver-if00"/> 
+        <param name="intensity" type="bool" value="true"/>
+    </node>
+
+        <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find yamasemi_sim)/rviz/yamabico.rviz" /> -->
+
+        <node pkg="joy" type="joy_node" name="joy_node" output="screen">
+        </node>
+
+        <node name="robotA_move" pkg="waypoint_follower" type="robotA_move" output="screen">
+        </node>
+
+        <!-- <node name="sync_waypoints_number" pkg="sync_waypoints_number" type="sync_waypoints_number" output="screen">
+        </node> -->
+
+        <!-- <node name="object_avoid" pkg="saishu" type="object_avoid" output="screen">
+        </node> -->
+
+        <!-- <node name="saishu_detect" pkg="saishu" type="saishu_detect">
+        </node> -->
+        
+    </group>
+</launch>

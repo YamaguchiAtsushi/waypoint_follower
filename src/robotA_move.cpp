@@ -184,7 +184,9 @@ void go_position(geometry_msgs::PoseStamped goal)
 		v = -k_v * ((goal.pose.position.x - robot_x) * (goal.pose.position.x - robot_x) + (goal.pose.position.y - robot_y) * (goal.pose.position.y - robot_y));
 	
 	// publishする値の格納
-	twist.linear.x = v;
+	//twist.linear.x = v;//defalult
+	twist.linear.x = 1.0;
+
 	twist.linear.y = 0.0;
 	twist.linear.z = 0.0;
 	twist.angular.x = 0.0;
