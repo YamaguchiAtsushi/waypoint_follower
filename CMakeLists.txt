@@ -120,6 +120,12 @@ target_link_libraries(robotA_move
   ${catkin_LIBRARIES}
 )
 
+add_executable(robotB_move src/robotB_move.cpp)
+
+target_link_libraries(robotB_move
+  ${catkin_LIBRARIES}
+)
+
 
 ###########
 ## Build ##
