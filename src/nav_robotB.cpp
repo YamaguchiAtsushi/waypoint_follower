@@ -32,7 +32,7 @@ sensor_msgs::LaserScan scan;
 std::vector<geometry_msgs::PoseStamped> waypoints; // waypointを格納するvector
 std_msgs::Int16 waypoints_A_number_now; // 今向かっているロボットAのwaypointの番号;
 //std_msgs::Int16 waypoints_A_number_next; // 送られてくる次に向かうロボットAのwaypointの番号
-geometry_msgs::PoseWithCovarianceStamped current_pose;
+// geometry_msgs::PoseWithCovarianceStamped current_pose;
 
 //int waypoints_A_number_now = 0; //今向かっているロボットAのwaypointの番号
 //int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
@@ -42,11 +42,12 @@ int waypoints_A_number_next = 0; // 送られてくる次に向かうロボッ�
 bool goal_flag = false;
 
 void amclPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
-    current_pose = *msg;
-    robot_x = current_pose.pose.pose.position.x;
-    robot_y = current_pose.pose.pose.position.y;
-    robot_r = current_pose.pose.pose.orientation;
-    ROS_INFO("Current estimated pose: [robot_x: %f, robot_y: %f, theta: %f]", robot_x, robot_y, tf::getYaw(current_pose.pose.pose.orientation));
+    // current_pose = *msg;
+    robot_x = msg->pose.pose.position.x;
+    robot_y = msg->pose.pose.position.y;
+    robot_r = msg->pose.pose.orientation;
+    std::cout <<"amclposecallback called" << std::endl;
+    ROS_INFO("Current estimated pose: [robot_x: %f, robot_y: %f, theta: %f]", robot_x, robot_y, tf::getYaw(msg->pose.pose.orientation));
 }
 
 void numberCallback(const std_msgs::Int16::ConstPtr &msg)
@@ -206,24 +207,24 @@ void go_position(geometry_msgs::PoseStamped goal)
 	twist.angular.y = 0.0;
 	twist.angular.z = w;
 
-	// std::cout << "v: " << v << ", w: " << w << std::endl;
 
 }
 
 int main(int argc, char **argv)
 {
 	// 初期化関連
-	ros::init(argc, argv, "robotA_move");
+	ros::init(argc, argv, "robotB_move");
 	ros::NodeHandle nh;
 	ros::NodeHandle pnh("~");
 
 	// Subscriber, Publisherの定義
 	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
+    // ros::Publisher initial_pose = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("/initialpose", 1);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
     ros::Subscriber scan_sub = nh.subscribe("robotB/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
     ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
-    ros::Subscriber amcl_sub = nh.subscribe("robotB/amcl_pose", 1000, amclPoseCallback);
+    ros::Subscriber amcl_sub = nh.subscribe("/robotB/amcl_pose", 1000, amclPoseCallback);
 
 	ros::Rate loop_rate(100);
 
@@ -262,17 +263,17 @@ int main(int argc, char **argv)
         goal.pose.position.x = waypoints[waypoints_A_number_next].pose.position.x;
         goal.pose.position.y = waypoints[waypoints_A_number_next].pose.position.y;
 
-        std::cout << "waypoints_A_number_now.data:" << waypoints_A_number_now.data << std::endl;
-        std::cout << "waypoints_A_number_next" << waypoints_A_number_next << std::endl;
-        std::cout << goal.pose.position.x << " " << goal.pose.position.y << std::endl;
+        std::cout << "goal_x:" << goal.pose.position.x << " goal_y:" << goal.pose.position.y << std::endl;
+        std::cout << "robot_x:" << robot_x << " robot_y:" << robot_y << std::endl;
+
 
         go_position(goal);
-        std::cout << "goal_flag:" << goal_flag << std::endl;
+
 
 
         if(near_position(goal)){
 
-            std::cout << "goal_flag:" << goal_flag << std::endl;
+
             twist.linear.x = 0.0;
             twist.angular.z = 0.0;
 
