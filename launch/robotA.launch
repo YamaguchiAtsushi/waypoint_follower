@@ -25,7 +25,9 @@
         <node pkg="joy" type="joy_node" name="joy_node" output="screen">
         </node>
 
-        <node name="robotA_move" pkg="waypoint_follower" type="robotA_move" output="screen">
+        <!-- <node name="robotA_move" pkg="waypoint_follower" type="robotA_move" output="screen">
+        </node> -->
+        <node name="action_robotA" pkg="waypoint_follower" type="action_robotA" output="screen">
         </node>
 
         <!-- <node name="sync_waypoints_number" pkg="sync_waypoints_number" type="sync_waypoints_number" output="screen">

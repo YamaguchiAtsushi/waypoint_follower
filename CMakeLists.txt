@@ -10,6 +10,8 @@ project(waypoint_follower)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  actionlib
+  move_base_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -114,6 +116,12 @@ target_link_libraries(waypoint_follower
   ${catkin_LIBRARIES}
 )
 
+add_executable(joy_controller src/joy_controller.cpp)
+
+target_link_libraries(joy_controller
+  ${catkin_LIBRARIES}
+)
+
 add_executable(robotA_move src/robotA_move.cpp)
 
 target_link_libraries(robotA_move
@@ -125,6 +133,20 @@ add_executable(robotB_move src/robotB_move.cpp)
 target_link_libraries(robotB_move
   ${catkin_LIBRARIES}
 )
+
+add_executable(nav_robotA src/nav_robotA.cpp)
+
+target_link_libraries(nav_robotA
+  ${catkin_LIBRARIES}
+)
+
+
+add_executable(action_robotA src/action_robotA.cpp)
+
+target_link_libraries(action_robotA
+  ${catkin_LIBRARIES}
+)
+
 
 
 ###########

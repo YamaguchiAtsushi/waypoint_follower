@@ -2,6 +2,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <sensor_msgs/LaserScan.h>
@@ -30,29 +31,37 @@ sensor_msgs::LaserScan scan;
 std::vector<geometry_msgs::PoseStamped> waypoints; // waypointを格納するvector
 std_msgs::Int16 waypoints_A_number_now; // 今向かっているロボットAのwaypointの番号;
 //std_msgs::Int16 waypoints_A_number_next; // 送られてくる次に向かうロボットAのwaypointの番号
+geometry_msgs::PoseWithCovarianceStamped current_pose;
 
 //int waypoints_A_number_now = 0; //今向かっているロボットAのwaypointの番号
 //int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
-int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
+int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
+//int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
+
 bool goal_flag = false;
+
+void amclPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
+    current_pose = *msg;
+    robot_x = current_pose.pose.pose.position.x;
+    robot_y = current_pose.pose.pose.position.y;
+    robot_r = current_pose.pose.pose.orientation;
+    ROS_INFO("Current estimated pose: [robot_x: %f, robot_y: %f, theta: %f]", robot_x, robot_y, tf::getYaw(current_pose.pose.pose.orientation));
+}
 
 void numberCallback(const std_msgs::Int16::ConstPtr &msg)
 {
-    // int before = waypoints_A_number_next;
     waypoints_A_number_next = msg->data;
-    // if (before != waypoints_A_number_next){
-    //     goal_flag = true;
-    // }
+
 
 }
 
 // オドメトリのコールバック
-void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
-{
-	robot_x = msg->pose.pose.position.x;
-	robot_y = msg->pose.pose.position.y;
-	robot_r = msg->pose.pose.orientation;
-}
+// void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
+// {
+// 	robot_x = msg->pose.pose.position.x;
+// 	robot_y = msg->pose.pose.position.y;
+// 	robot_r = msg->pose.pose.orientation;
+// }
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_)
 {
@@ -187,7 +196,9 @@ void go_position(geometry_msgs::PoseStamped goal)
 		v = -k_v * ((goal.pose.position.x - robot_x) * (goal.pose.position.x - robot_x) + (goal.pose.position.y - robot_y) * (goal.pose.position.y - robot_y));
 	
 	// publishする値の格納
-	twist.linear.x = v;
+	//twist.linear.x = v;//defalult
+	twist.linear.x = 1.0;
+
 	twist.linear.y = 0.0;
 	twist.linear.z = 0.0;
 	twist.angular.x = 0.0;
@@ -206,11 +217,12 @@ int main(int argc, char **argv)
 	ros::NodeHandle pnh("~");
 
 	// Subscriber, Publisherの定義
-	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
+	// ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
-    ros::Subscriber scan_sub = nh.subscribe("scan", 10, scanCallback);
+    ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
     ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
+    ros::Subscriber amcl_sub = nh.subscribe("amcl_pose", 1000, amclPoseCallback);
 
 	ros::Rate loop_rate(100);
 
@@ -254,46 +266,20 @@ int main(int argc, char **argv)
         std::cout << goal.pose.position.x << " " << goal.pose.position.y << std::endl;
 
         go_position(goal);
-        //std::cout << "check:0" << std::endl;
         std::cout << "goal_flag:" << goal_flag << std::endl;
 
 
         if(near_position(goal)){
-            //std::cout << "check:1" << std::endl;
+
             std::cout << "goal_flag:" << goal_flag << std::endl;
             twist.linear.x = 0.0;
             twist.angular.z = 0.0;
 
             waypoints_A_number_pub.publish(waypoints_A_number_now);
 
-            //waypoints_A_number_pub.publish(waypoints_A_number_now);
-            //if (goal_flag == false && waypoints_A_number_next == waypoints_A_number_now.data){
-                //std::cout << "check:2" << std::endl;
-
-                //waypoints_A_number_now.data += 1;
-              //  std::cout << "nownownow:" << waypoints_A_number_now.data << std::endl;
-                //waypoints_A_number_pub.publish(waypoints_A_number_now);
-                //goal_flag = true;
             }
 
-        // int before = waypoints_A_number_next;
-        // if (before != waypoints_A_number_next){
-        //     goal_flag = true;
-        // }
-        // if (goal_flag == true){
-        //     waypoints_A_number_now.data += 1;
-        //     waypoints_A_number_pub.publish(waypoints_A_number_now);
-        //     //to_be_waypoints_number +=1;
-        //     goal_flag = false;
-        // }
-            // if (waypoints_A_number_next == 0){
-            //     continue;
-            // }else{
-            //     waypoints_A_number_now.data += 1;
-            //     std::cout << "nownownow:" << waypoints_A_number_now.data << std::endl;
-            //     break;
 
-            // }
         
 
 

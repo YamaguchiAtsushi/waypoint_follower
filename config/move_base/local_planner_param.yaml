@@ -1,0 +1,11 @@
+TrajectoryPlannerROS:
+  max_vel_x: 0.45 #x方向の最大速度。
+  min_vel_x: 0.1 #x方向の最小速度。
+  max_rotational_vel: 1.0 #最大回転速度（ラジアン/秒）。
+  min_in_place_rotational_vel: 0.4 #目的地に到着し、ロボットの角度を合わせるために回転するときの最小角速度。
+  acc_lim_th: 3.2 #回転の最大角加速度。
+  acc_lim_x: 2.5 #x方向（ロボットの前進方向）の最大加速度。
+  acc_lim_y: 2.5 #y方向の最大加速度。（全方位移動車両等のホロノミックロボットの場合にのみ使用）
+
+  holonomic_robot: false #ホロノミックなロボットかどうか。全方位移動車両の場合にはtrueにする。差動二輪やステアリング型の場合はfalse。
+  meter_scoring: true #goal_distance と path_distance の単位がメートルかセルであると仮定するかどうか。

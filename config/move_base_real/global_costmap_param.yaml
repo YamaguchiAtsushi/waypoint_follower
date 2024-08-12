@@ -1,0 +1,5 @@
+global_costmap:
+  global_frame: map #map情報のフレーム。
+  robot_base_frame: base_link ##ロボットのフレーム。
+  update_frequency: 5.0 #global_costmapを更新する頻度。（Hz）
+  static_map: true #map_serverが提供するマップに基づいてコストマップ自身を初期化するかどうか
