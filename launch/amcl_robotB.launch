@@ -19,7 +19,7 @@
             <param name="intensity" type="bool" value="true"/>
         </node>
 
-        <node name="nav_robotA" pkg="waypoint_follower" type="nav_robotA" output="screen">
+        <node name="nav_robotB" pkg="waypoint_follower" type="nav_robotB" output="screen">
         </node>
 
         <node pkg="rviz" type="rviz" args="-d '$(find waypoint_follower)/config/rviz/robot_parent_navigation.rviz'" name="visualizer" respawn="true" />
