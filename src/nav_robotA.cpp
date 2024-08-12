@@ -20,6 +20,7 @@
 
 
 // オドメトリから得られる現在の位置と姿勢
+double robot_odom_x, robot_odom_y;
 double robot_x, robot_y;
 double roll, pitch, yaw;
 
@@ -55,13 +56,13 @@ void numberCallback(const std_msgs::Int16::ConstPtr &msg)
 
 }
 
-// オドメトリのコールバック
-// void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
-// {
-// 	robot_x = msg->pose.pose.position.x;
-// 	robot_y = msg->pose.pose.position.y;
-// 	robot_r = msg->pose.pose.orientation;
-// }
+//オドメトリのコールバック
+void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
+{
+	robot_odom_x = msg->pose.pose.position.x;
+	robot_odom_y = msg->pose.pose.position.y;
+	// robot_odom_r = msg->pose.pose.orientation;
+}
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_)
 {
@@ -217,7 +218,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle pnh("~");
 
 	// Subscriber, Publisherの定義
-	// ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
+	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
     // ros::Publisher initial_pose = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("/initialpose", 1);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
     ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
