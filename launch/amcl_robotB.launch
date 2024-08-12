@@ -3,7 +3,7 @@
 
 
 
-    <group ns="robotA">
+    <group ns="robotB">
 
         <node pkg="ypspur_ros" type="ypspur_ros" name="ypspur_ros" respawn="true">
         <param name="param_file"
@@ -44,7 +44,7 @@
 
         <!--ここからamclのコード記入-->
         <node pkg="amcl" type="amcl" name="amcl" output="screen">  
-                <remap from="scan" to="/robotA/scan" />
+                <remap from="scan" to="/robotB/scan" />
                 <param name="use_map_topic" value="$(arg use_map_topic)"/>
                 <!-- Publish scans from best pose at a max of 10 Hz -->
                 <param name="global_frame_id" value="/map"/>

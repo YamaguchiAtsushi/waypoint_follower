@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
     ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
-    ros::Subscriber amcl_sub = nh.subscribe("amcl_pose", 1000, amclPoseCallback);
+    ros::Subscriber amcl_sub = nh.subscribe("robotA/amcl_pose", 1000, amclPoseCallback);
 
 	ros::Rate loop_rate(100);
 

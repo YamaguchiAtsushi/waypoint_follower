@@ -33,7 +33,9 @@ std_msgs::Int16 waypoints_A_number_now; // 今向かっているロボットAの
 
 //int waypoints_A_number_now = 0; //今向かっているロボットAのwaypointの番号
 //int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
-int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
+int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
+//int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
+
 bool goal_flag = false;
 
 void numberCallback(const std_msgs::Int16::ConstPtr &msg)

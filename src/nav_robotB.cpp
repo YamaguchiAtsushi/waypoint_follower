@@ -219,10 +219,10 @@ int main(int argc, char **argv)
 	// Subscriber, Publisherの定義
 	// ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
-    ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
+    ros::Subscriber scan_sub = nh.subscribe("robotB/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
     ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
-    ros::Subscriber amcl_sub = nh.subscribe("amcl_pose", 1000, amclPoseCallback);
+    ros::Subscriber amcl_sub = nh.subscribe("robotB/amcl_pose", 1000, amclPoseCallback);
 
 	ros::Rate loop_rate(100);
 
