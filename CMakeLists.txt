@@ -140,6 +140,13 @@ target_link_libraries(nav_robotA
   ${catkin_LIBRARIES}
 )
 
+add_executable(nav_robotB src/nav_robotA.cpp)
+
+target_link_libraries(nav_robotB
+  ${catkin_LIBRARIES}
+)
+
+
 
 add_executable(action_robotA src/action_robotA.cpp)
 
