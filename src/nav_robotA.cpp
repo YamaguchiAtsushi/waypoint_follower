@@ -218,6 +218,7 @@ int main(int argc, char **argv)
 
 	// Subscriber, Publisherの定義
 	// ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
+    // ros::Publisher initial_pose = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped> ("/initialpose", 1);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
     ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
