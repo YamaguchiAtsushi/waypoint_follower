@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+    <group ns="robotB">
+
+        <!-- <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+           
+            <param name="calibrate_time" type="bool" value="false"/> 
+
+            <param name="serial_port" type="string" value="/dev/serial/by-id/usb-T-frog_project_T-frog_Driver-if00"/> 
+            <param name="intensity" type="bool" value="true"/>
+        </node> -->
+
+        <node pkg="urg_node" type="urg_node" name="urg_node">
+            <param name="serial_port" value="/dev/serial/by-id/usb-Hokuyo_Data_Flex_for_USB_URG-Series_USB_Driver-if00" />
+        </node>
+
+        <node name="nav_robot" pkg="waypoint_follower" type="nav_robot" output="screen">
+        </node>
+
+        <node name="map_server" pkg="map_server" type="map_server" args="$(find waypoint_follower)/map/sb_map.yaml" >
+        <param name="frame_id" value="map"/>
+        </node>
+
+        <!-- <node pkg="rviz" type="rviz" args="-d '$(find waypoint_follower)/config/rviz/robotB_navigation.rviz'" name="visualizer" respawn="true" /> -->
+        <node pkg="tf" type="static_transform_publisher" name="laser_transform" args=" 0 0.15 0.1 0 0 0 base_link laser 100" />
+    </group>
+</launch>
