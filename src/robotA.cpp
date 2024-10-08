@@ -7,7 +7,6 @@
 #include <sensor_msgs/LaserScan.h>
 #include <std_msgs/Int16.h>
 
-
 #include <map>
 #include <math.h>
 #include <vector>
@@ -17,36 +16,26 @@
 #include <sstream>
 #include <string>
 
-
-// オドメトリから得られる現在の位置と姿勢
 double robot_x, robot_y;
 double roll, pitch, yaw;
 
 geometry_msgs::Quaternion robot_r;
-geometry_msgs::Twist twist; // 指令する速度、角速度
+geometry_msgs::Twist twist;
 std::map<std::string, double> params_; // パラメータをここに格納
-geometry_msgs::PoseStamped goal; // 目標地点
+geometry_msgs::PoseStamped goal;
 sensor_msgs::LaserScan scan;
 std::vector<geometry_msgs::PoseStamped> waypoints; // waypointを格納するvector
 std_msgs::Int16 waypoints_A_number_now; // 今向かっているロボットAのwaypointの番号;
-//std_msgs::Int16 waypoints_A_number_next; // 送られてくる次に向かうロボットAのwaypointの番号
 
-//int waypoints_A_number_now = 0; //今向かっているロボットAのwaypointの番号
-//int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
 int waypoints_A_number_next = 0; // 送られてくる次に向かうロボットAのwaypointの番号
-//int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
-
 bool goal_flag = false;
 
 void numberCallback(const std_msgs::Int16::ConstPtr &msg)
 {
     waypoints_A_number_next = msg->data;
-
-
 }
 
-// オドメトリのコールバック
-void odom_callback(const nav_msgs::Odometry::ConstPtr &msg)
+void odomCallback(const nav_msgs::Odometry::ConstPtr &msg)
 {
 	robot_x = msg->pose.pose.position.x;
 	robot_y = msg->pose.pose.position.y;
@@ -77,43 +66,32 @@ bool readWaypointsFromCSV(std::string csv_file){
     }
 
     std::string line; //1行ずつ読み込むための変数
-
     std::getline(file, line); //最初の一行を読み飛ばす
 
     while (std::getline(file, line)) {
             std::istringstream ss(line);//文字列をカンマで区切るための変数
             std::string token;//1つのデータを格納する変数
             geometry_msgs::PoseStamped waypoint; //waypointを格納する変数
-
             // x座標の読み込み
             std::getline(ss, token, ',');//カンマで区切った文字列を1つずつ読み込む
             waypoint.pose.position.x = std::stod(token);//文字列をdouble型に変換してwaypointに格納
-
             // y座標の読み込み
             std::getline(ss, token, ',');
             waypoint.pose.position.y = std::stod(token);
-
             // z座標の読み込み
             std::getline(ss, token, ',');
             waypoint.pose.position.z = std::stod(token);
-
             // orientationを初期化
             waypoint.pose.orientation.x = 1.0;
-
             // ベクトルに追加
             waypoints.push_back(waypoint);
-            
             // デバッグメッセージを追加
             ROS_INFO("Read waypoint: x=%f, y=%f, z=%f", waypoint.pose.position.x, waypoint.pose.position.y, waypoint.pose.position.z);
         }
-
         file.close();
         return true;
     }
-
-
-
-// クォータニオンをオイラーに変換                                               
+                                               
 void geometry_quat_to_rpy(double &roll, double &pitch, double &yaw, geometry_msgs::Quaternion geometry_quat)
 {
     tf::Quaternion quat;
@@ -121,14 +99,6 @@ void geometry_quat_to_rpy(double &roll, double &pitch, double &yaw, geometry_msg
     tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 }
 
-// void rpy_to_geometry_quat(double roll, double pitch, double yaw, geometry_msgs::Quaternion &geometry_quat)
-// {
-//     tf::Quaternion quat_;
-//     quat_.setRPY(roll, pitch, yaw);
-//     quaternionTFToMsg(quat_, geometry_quat);
-// }
-
-//　goalで指定した位置に近いかの判定を行う
 int near_position(geometry_msgs::PoseStamped goal)
 {
 	double difx = robot_x - goal.pose.position.x;
@@ -188,7 +158,6 @@ void go_position(geometry_msgs::PoseStamped goal)
 	// publishする値の格納
 	//twist.linear.x = v;//defalult
 	twist.linear.x = 1.0;
-
 	twist.linear.y = 0.0;
 	twist.linear.z = 0.0;
 	twist.angular.x = 0.0;
@@ -196,7 +165,6 @@ void go_position(geometry_msgs::PoseStamped goal)
 	twist.angular.z = w;
 
 	// std::cout << "v: " << v << ", w: " << w << std::endl;
-
 }
 
 int main(int argc, char **argv)
@@ -207,7 +175,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle pnh("~");
 
 	// Subscriber, Publisherの定義
-	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
+	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odomCallback);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
     ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
@@ -225,19 +193,47 @@ int main(int argc, char **argv)
 	robot_r.z = 0.0;
 	robot_r.w = 1.0;
     
-    std::string csv_file = "/home/yamaguchi-a/catkin_ws/src/waypoint_follower/csv/waypoints.csv";
-
-    
+    std::string csv_file = "/home/yamaguchi-a/catkin_ws/src/waypoint_follower/csv/waypoints_A.csv";    
 
     if (!readWaypointsFromCSV(csv_file)) {
         ROS_ERROR("Failed to read waypoints from CSV file.");
         return 1;
     }
-    
-
 
     while(ros::ok()){
+          switch (state){
+            case SEND_WAYPOINTS1:
+                std::cout << "SEND_WAYPOINYS1" << std::endl;
+                //std::cout << "find_point_" << find_point_ << std::endl; 
+                std::cout << "find_character_" << find_character_ << std::endl; 
 
+                if(sending_index < waypoints_.size()){
+                sending_index =  SendWaypointsOnce(sending_index);
+                }
+                if(is_goal_achieved_){//trueになったら
+                    //if(find_character_ == 1){
+                    //is_goal_achieved_ = false;
+                    //is_goal_accepted_ = false;
+                    //is_aborted_ = false;
+                    //state = APPROACH_AREA;
+                    //std::cout << "APPROACH_POINT start" << std::endl;
+                    //}
+                    if(find_point_ == 1){
+                    is_goal_achieved_ = false;
+                    is_goal_accepted_ = false;
+                    is_aborted_ = false;
+                    state = APPROACH_POINT;
+                    //state = APPROACH_AREA;
+                    std::cout << "APPROACH_POINT start" << std::endl;
+                    }
+                    else{
+                    state = SEND_WAYPOINTS2;
+                    }
+            }
+                break;
+        }
+    
+    while(ros::ok()){
         ros::Time now = ros::Time::now();   
         if (now - start < ros::Duration(3.0))
         {
@@ -256,7 +252,6 @@ int main(int argc, char **argv)
 
         go_position(goal);
         std::cout << "goal_flag:" << goal_flag << std::endl;
-
 
         if(near_position(goal)){
 

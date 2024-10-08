@@ -2,6 +2,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <sensor_msgs/LaserScan.h>
@@ -37,6 +38,15 @@ int waypoints_A_number_next = 0; // 送られてくる次に向かうロボッ�
 //int waypoints_A_number_next = 1; // 送られてくる次に向かうロボットAのwaypointの番号
 
 bool goal_flag = false;
+
+void amclPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
+    // current_pose = *msg;
+    robot_x = msg->pose.pose.position.x;
+    robot_y = msg->pose.pose.position.y;
+    robot_r = msg->pose.pose.orientation;
+    std::cout <<"amclposecallback called" << std::endl;
+    ROS_INFO("Current estimated pose: [robot_x: %f, robot_y: %f, theta: %f]", robot_x, robot_y, tf::getYaw(msg->pose.pose.orientation));
+}
 
 void numberCallback(const std_msgs::Int16::ConstPtr &msg)
 {
@@ -186,8 +196,8 @@ void go_position(geometry_msgs::PoseStamped goal)
 		v = -k_v * ((goal.pose.position.x - robot_x) * (goal.pose.position.x - robot_x) + (goal.pose.position.y - robot_y) * (goal.pose.position.y - robot_y));
 	
 	// publishする値の格納
-	//twist.linear.x = v; //default
-	twist.linear.x = 0.3;
+	// twist.linear.x = v; //default
+	twist.linear.x = 0.1;
 	twist.linear.y = 0.0;
 	twist.linear.z = 0.0;
 	twist.angular.x = 0.0;
@@ -208,9 +218,10 @@ int main(int argc, char **argv)
 	// Subscriber, Publisherの定義
 	ros::Subscriber odom_sub = nh.subscribe("ypspur_ros/odom", 1000, odom_callback);
 	ros::Publisher twist_pub = nh.advertise<geometry_msgs::Twist>("ypspur_ros/cmd_vel", 1000);
-    ros::Subscriber scan_sub = nh.subscribe("robotA/scan", 10, scanCallback);
+    ros::Subscriber scan_sub = nh.subscribe("robotB/scan", 10, scanCallback);
     ros::Publisher waypoints_A_number_pub = nh.advertise<std_msgs::Int16>("waypoints_A_number_now", 10);
     ros::Subscriber waypoints_A_number_sub = nh.subscribe("waypoints_A_number_next", 10, numberCallback);
+    ros::Subscriber amcl_sub = nh.subscribe("robotB/amcl_pose", 1000, amclPoseCallback);
 
 	ros::Rate loop_rate(100);
 
